@@ -62,7 +62,7 @@ Match output to the current run rather than accepting an older matching log line
 ## Remaining validation
 
 - No concurrent scheduling window was exercised or deletion/rehash race reproduced.
-- The transport-endpoint / float path was not exercised by this test.
+- The transport-endpoint / float path was not exercised by this VPN-IP test; a separate deterministic synthetic test is documented in [FLOAT-TESTING.md](FLOAT-TESTING.md).
 - No KASAN, KCSAN, lockdep or sustained concurrency run was performed.
 - Source inspection and this focused invariant test are not complete driver or kernel security validation.
 

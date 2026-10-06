@@ -1,6 +1,6 @@
 # OpenVPN kernel module backport review
 
-Documentation of a local build, functional tests and a deterministic VPN-IP rehash invariant regression test of the upstream fix associated with CVE-2026-74727, against Ubuntu kernel source package `linux 7.0.0-38.38` on x86_64.
+Documentation of a local build, functional tests and deterministic VPN-IP and transport-endpoint rehash invariant regression tests of the upstream fix associated with CVE-2026-74727, against Ubuntu kernel source package `linux 7.0.0-38.38` on x86_64.
 
 ## Attribution and scope
 
@@ -65,9 +65,24 @@ This is a runtime check of the specific post-removal invariant, not a reproducti
 
 See [TESTING.md](TESTING.md) for the recorded output, reproduction instructions and limits. The generator is in [tests/prepare-ovpn-rehash-regtest.py](tests/prepare-ovpn-rehash-regtest.py).
 
+## Deterministic transport-endpoint / float regression test
+
+On 2026-10-06, standalone test modules also executed the actual `ovpn_peer_endpoints_update()` function extracted from the unpatched and patched sources, with the production binding helpers. For both IPv4 and IPv6, private synthetic packet headers caused an active peer to float, then caused another endpoint update after its hash entries had been removed while its storage remained allocated.
+
+| Property, for both IPv4 and IPv6 | Before patch | After patch |
+| --- | --- | --- |
+| Active peer floats and remains in transport table | PASS | PASS |
+| Endpoint update is reached after modeled removal | PASS | PASS |
+| Removed peer remains outside transport table | FAIL | PASS |
+| Occupied transport buckets after removed-peer update | 1 | 0 |
+
+No packets were transmitted, and no real interfaces, VPN peers or addresses were modified. Both test modules were unloaded afterwards; the operational VPN remained active with its address unchanged. The reviewed log interval contained the four test results and no matching BUG, Oops, general protection fault or soft lockup lines.
+
+See [FLOAT-TESTING.md](FLOAT-TESTING.md) and [tests/prepare-ovpn-float-regtest.py](tests/prepare-ovpn-float-regtest.py) for scope, reproduction instructions and recorded results.
+
 ## Limits
 
-The deletion/rehash race was not reproduced. No exploit-based regression test, KASAN-enabled run, lockdep-enabled run or sustained concurrency test was performed. Functional tests do not prove that the race is fixed under all conditions. The VPN IPv4 test confirmed the API behavior, not independently the correctness of every hash-table lookup.
+The concurrent deletion/rehash race was not reproduced. Both modified rehash paths were tested in a deterministic synthetic post-removal state; this does not establish full correctness under real concurrency. No exploit-based regression test, KASAN-enabled run, lockdep-enabled run or sustained concurrency test was performed. The tests do not exercise the complete authenticated network receive path, real production deletion callbacks or every hash-table lookup. The earlier VPN IPv4 CLI test confirmed API behavior only.
 
 This module was not installed persistently or deployed to production. Other OpenVPN kernel vulnerabilities were outside this patch's scope. No binary release is proposed.
 
