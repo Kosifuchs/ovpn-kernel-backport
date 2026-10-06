@@ -1,1 +1,4 @@
 baf0962c60b182776a86e040d2ec5b35eea2737c2e2eb6f17f87eb7d2fe47b24  CVE-2026-74727-upstream.patch
+68baf39068c6ac5d3436222f4f9fd655d5110f8f89bea33f72bca7e43ec0e16c  README.md
+c5d207a5cb6e4906e42e2a0f8729cd5fff2d17e5f2291cac01f3bda4bb69d7e2  TESTING.md
+fea76dc799beb5f17593903fc159685f88b89696acaefa87bb15fb9609af79e1  tests/prepare-ovpn-rehash-regtest.py

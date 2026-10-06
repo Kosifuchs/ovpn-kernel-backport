@@ -1,6 +1,6 @@
 # OpenVPN kernel module backport review
 
-Documentation of a local build and functional test of the upstream fix associated with CVE-2026-74727, against Ubuntu kernel source package `linux 7.0.0-38.38` on x86_64.
+Documentation of a local build, functional tests and a deterministic VPN-IP rehash invariant regression test of the upstream fix associated with CVE-2026-74727, against Ubuntu kernel source package `linux 7.0.0-38.38` on x86_64.
 
 ## Attribution and scope
 
@@ -50,6 +50,20 @@ Tests were performed manually on a Hyper-V Ubuntu VM with kernel `7.0.0-38-gener
 - A modified test CLI changed a test peer's VPN IPv4 address from `192.0.2.2` to `192.0.2.3`; the returned peer state confirmed the change. This was confined to a temporary test namespace and did not change the operational VPN address.
 - The reviewed kernel log contained no matching BUG, Oops, KASAN, general protection fault or soft lockup messages. Unsigned out-of-tree module taint messages were present.
 - Test namespaces were removed and the distribution module was reloaded after testing. The operational VPN reconnected.
+
+## Deterministic VPN-IP rehash regression test
+
+On 2026-10-06, two standalone test modules executed the actual `ovpn_peer_hash_vpn_ip()` function extracted from the unpatched backup and patched source. Private synthetic objects were kept allocated throughout. After simulating completed removal from the hash tables, the test called the function again under `ovpn->lock`.
+
+| Property | Before patch | After patch |
+| --- | --- | --- |
+| Active peer is entered in IPv4 and IPv6 tables | PASS | PASS |
+| Removed peer remains outside IPv4 and IPv6 tables | FAIL | PASS |
+| Occupied IPv4 / IPv6 buckets after rehash of removed peer | 1 / 1 | 0 / 0 |
+
+This is a runtime check of the specific post-removal invariant, not a reproduction of a concurrent deletion race or a use-after-free. The baseline's invariant failure is expected and demonstrates that the test distinguishes the two function versions. Both modules were subsequently unloaded. The operational VPN remained active with its address unchanged. The reviewed log interval contained the test results and no matching BUG, Oops, general protection fault or soft lockup messages.
+
+See [TESTING.md](TESTING.md) for the recorded output, reproduction instructions and limits. The generator is in [tests/prepare-ovpn-rehash-regtest.py](tests/prepare-ovpn-rehash-regtest.py).
 
 ## Limits
 
