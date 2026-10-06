@@ -63,6 +63,10 @@ sudo journalctl -k -b --no-pager | grep -F 'ovpn-float-regtest after' | tail -n 
 
 Match timestamps to the current run. Unexpected test results or allocation failures cause initialization to fail; do not treat stale log lines as evidence of a successful new run. Inspect kernel errors and confirm test modules are unloaded after testing. Binary build reproducibility is not asserted.
 
+## Subsequent KASAN-enabled run
+
+The same synthetic test was rebuilt and rerun on `7.0.14-ovpn-kasan` on 2026-10-06. Both IPv4/IPv6 variants produced the same expected state results and the supplied filtered log contained no KASAN errors. See [KASAN-TESTING.md](KASAN-TESTING.md) for the exact output, configuration and new binary hashes. This later execution did not change the test's synthetic removal method or its lifetime limitations.
+
 ## Remaining limits
 
-Both modified functions now have deterministic before/after state tests, but concurrent race reproduction, real reference-count and RCU teardown validation, authenticated traffic integration tests, sustained load, and KASAN/KCSAN/lockdep runs remain outstanding. These results are not complete security validation.
+Both modified functions have deterministic before/after state tests, and the float test has also run under KASAN. Concurrent race reproduction, runtime validation of the actual reference-count and RCU peer teardown, authenticated traffic integration tests, sustained load, and KCSAN/lockdep runs remain outstanding. No supplemental lifecycle test was completed. These results are not complete security validation.

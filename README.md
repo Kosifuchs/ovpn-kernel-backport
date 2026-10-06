@@ -1,6 +1,6 @@
 # OpenVPN kernel module backport review
 
-Documentation of a local build, functional tests and deterministic VPN-IP and transport-endpoint rehash invariant regression tests of the upstream fix associated with CVE-2026-74727, against Ubuntu kernel source package `linux 7.0.0-38.38` on x86_64.
+Documentation of a local build, functional tests, focused source review and deterministic VPN-IP and transport-endpoint rehash invariant regression tests of the upstream fix associated with CVE-2026-74727, against Ubuntu kernel source package `linux 7.0.0-38.38` on x86_64. The transport-endpoint tests were also rebuilt and run on a locally built Generic KASAN kernel.
 
 ## Attribution and scope
 
@@ -80,11 +80,21 @@ No packets were transmitted, and no real interfaces, VPN peers or addresses were
 
 See [FLOAT-TESTING.md](FLOAT-TESTING.md) and [tests/prepare-ovpn-float-regtest.py](tests/prepare-ovpn-float-regtest.py) for scope, reproduction instructions and recorded results.
 
+## Additional KASAN run and source review
+
+On 2026-10-06, the reviewed Ubuntu source was built as a full kernel with `CONFIG_KASAN=y`, `CONFIG_KASAN_GENERIC=y`, `CONFIG_KASAN_OUTLINE=y` and `CONFIG_STACKTRACE=y`. Its release string was `7.0.14-ovpn-kasan`. Kernel and module builds returned exit code 0. The VM booted this kernel and its administrative VPN service was active.
+
+The existing synthetic float modules were rebuilt against that full build and verified by checksum and vermagic after transfer. IPv4 and IPv6 results remained unchanged: active-peer and endpoint-update checks passed in both variants; the removed-peer invariant failed in the baseline and passed in the patched variant. No KASAN error appeared in the supplied filtered test log. This is a KASAN-enabled execution of the synthetic test, **not a KASAN reproduction of the original use-after-free**. The VPN-IP-only test was not rerun under KASAN.
+
+The test modules were unloaded. The VM subsequently returned to distribution kernel `7.0.0-38-generic`, and the administrative VPN was confirmed active. The separately installed test kernel and its modules remain available for future testing; the distribution kernel is configured as the GRUB default.
+
+See [KASAN-TESTING.md](KASAN-TESTING.md) for configuration, exact results, artifact hashes and limitations. See [SOURCE-REVIEW.md](SOURCE-REVIEW.md) for the focused lock, reference and release-path review based on operator-supplied source excerpts.
+
 ## Limits
 
-The concurrent deletion/rehash race was not reproduced. Both modified rehash paths were tested in a deterministic synthetic post-removal state; this does not establish full correctness under real concurrency. No exploit-based regression test, KASAN-enabled run, lockdep-enabled run or sustained concurrency test was performed. The tests do not exercise the complete authenticated network receive path, real production deletion callbacks or every hash-table lookup. The earlier VPN IPv4 CLI test confirmed API behavior only.
+The concurrent deletion/rehash race was not reproduced. Both modified rehash paths were tested in a deterministic synthetic post-removal state; only the float test was subsequently rerun under KASAN. This does not establish full correctness under real concurrency. No exploit-based regression test, KCSAN-enabled run, lockdep-enabled run or sustained concurrency test was performed. The tests do not exercise the complete authenticated network receive path, real production deletion callbacks or every hash-table lookup. Actual reference-count and RCU peer teardown were reviewed statically, not exercised by a completed lifecycle test. The earlier VPN IPv4 CLI test confirmed API behavior only.
 
-This module was not installed persistently or deployed to production. Other OpenVPN kernel vulnerabilities were outside this patch's scope. No binary release is proposed.
+The earlier standalone backport module was not installed persistently. A separate KASAN test kernel was later installed and manually booted on the existing VM, whose administrative VPN remained in use during testing; it was not a wholly disposable environment. The VM has returned to its distribution kernel. These results do not recommend production deployment of the test kernel. Other OpenVPN kernel vulnerabilities were outside this patch's scope. No binary release is proposed.
 
 ## Recovery during a temporary module test
 

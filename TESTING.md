@@ -63,7 +63,7 @@ Match output to the current run rather than accepting an older matching log line
 
 - No concurrent scheduling window was exercised or deletion/rehash race reproduced.
 - The transport-endpoint / float path was not exercised by this VPN-IP test; a separate deterministic synthetic test is documented in [FLOAT-TESTING.md](FLOAT-TESTING.md).
-- No KASAN, KCSAN, lockdep or sustained concurrency run was performed.
+- This VPN-IP test was not rerun under KASAN. The separate float test was rerun on a Generic KASAN kernel; see [KASAN-TESTING.md](KASAN-TESTING.md). No KCSAN, lockdep or sustained concurrency run was performed.
 - Source inspection and this focused invariant test are not complete driver or kernel security validation.
 
 The original generator's unsupported `INIT_HLIST_NULLS_NODE` calls caused a build failure before any test module was loaded. They were removed because the synthetic nodes are already zero-initialized by `kzalloc`; the corrected modules then built and produced the recorded results. The published generator includes this correction.
